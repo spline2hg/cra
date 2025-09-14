@@ -12,6 +12,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "postinstall": "npm install -g eslint @eslint/js eslint-plugin-security jscpd",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
