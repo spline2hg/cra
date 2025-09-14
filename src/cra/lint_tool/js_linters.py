@@ -33,7 +33,7 @@ def _check_tool_installed(tool_name: str) -> bool:
 
 def _ensure_tools_installed():
     """Ensure all required JavaScript tools are installed."""
-    required_tools = ["eslint", "semgrep", "jscpd"]
+    required_tools = ["eslint", "jscpd"]
     missing_tools = []
 
     for tool in required_tools:
@@ -45,7 +45,6 @@ def _ensure_tools_installed():
             f"Missing required tools: {', '.join(missing_tools)}. "
             f"Please install them first::"
             f"  npm install -g eslint"
-            f"  pip install semgrep"
             f"  npm install -g jscpd"
         )
 

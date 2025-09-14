@@ -5,10 +5,12 @@ description = "A cli based code analysis tool that performs static analysis, gen
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "bandit>=1.8.6",
     "chromadb>=1.0.21",
     "click>=8.2.1",
     "esprima>=4.0.1",
     "fastapi>=0.116.1",
+    "flake8>=7.3.0",
     "httpx>=0.28.1",
     "itsdangerous>=2.2.0",
     "jinja2>=3.1.6",
@@ -19,11 +21,15 @@ dependencies = [
     "markdown>=3.9",
     "openai>=1.107.2",
     "pydantic>=2.11.9",
+    "pylint>=3.3.8",
     "python-dotenv>=1.1.1",
     "python-multipart>=0.0.20",
+    "radon>=6.0.1",
     "rich>=14.1.0",
+    "semgrep>=1.85.0",
     "sqlalchemy>=2.0.43",
     "uvicorn>=0.35.0",
+    "vulture>=2.14",
 ]
 
 [project.scripts]
