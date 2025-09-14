@@ -1,10 +1,11 @@
 [project]
 name = "cra"
 version = "0.1.0"
-description = "Add your description here"
+description = "A cli based code analysis tool that performs static analysis, generates AI-powered summaries, and provides an interactive chat interface for exploring codebases"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "chromadb>=1.0.21",
     "click>=8.2.1",
     "esprima>=4.0.1",
     "fastapi>=0.116.1",
