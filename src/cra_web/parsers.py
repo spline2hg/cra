@@ -1,6 +1,6 @@
 import os
 from typing import List
-from cra_web.dtos import Issue
+from src.cra_web.dtos import Issue
 
 
 def parse_lint_report(report_content: str) -> List[Issue]:

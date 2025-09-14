@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "jscpd": "^4.0.5"
+  },
+  "devDependencies": {
+    "eslint-plugin-security": "^3.0.1"
+  }
+}
