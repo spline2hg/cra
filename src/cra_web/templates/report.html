@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Report - Code Review Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-8">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">Code Analysis Report</h1>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button id="download-md-btn" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium rounded-md transition duration-150 ease-in-out">
+                        Download Markdown
+                    </button>
+                    <button id="delete-btn" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out">
+                        Delete Now
+                    </button>
+                    <a href="/" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out">
+                        New Analysis
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <!-- Tab Navigation -->
+            <div class="mb-6 border-b border-gray-200">
+                <nav class="flex space-x-8">
+                    <button id="report-tab" class="tab-button py-4 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 active">
+                        Report
+                    </button>
+                    <button id="issues-tab" class="tab-button py-4 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        Issues
+                    </button>
+                    <button id="chat-tab" class="tab-button py-4 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        Chat
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="tab-content">
+                <!-- Report Tab -->
+                <div id="report-content" class="tab-pane active">
+                    <!-- Analysis Summary Card -->
+                    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Analysis Summary</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h3 class="text-lg font-medium text-gray-800 mb-2">Total Issues</h3>
+                                <p class="text-3xl font-bold text-blue-600">{{ total_issues }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h3 class="text-lg font-medium text-gray-800 mb-2">Severity Distribution</h3>
+                                <div class="flex items-center justify-center h-32">
+                                    <canvas id="severityChart" width="200" height="200"></canvas>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h3 class="text-lg font-medium text-gray-800 mb-2">Language Split</h3>
+                                <div class="flex items-center justify-center h-32">
+                                    <canvas id="languageChart" width="200" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LLM Summary Card -->
+                    {% if llm_summary and llm_summary.strip() %}
+                    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-4">AI Insights</h2>
+                        <div id="llm-summary" class="prose max-w-none border border-gray-200 rounded-lg p-4 bg-blue-50 min-h-[200px]">
+                            <!-- LLM summary will be rendered here -->
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Full Lint Report -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Technical Details</h2>
+                        <div id="lint-report" class="prose max-w-none border border-gray-200 rounded-lg p-4 bg-gray-50 min-h-[400px] max-h-[600px] overflow-y-auto">
+                            <!-- Lint report will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Issues Tab -->
+                <div id="issues-content" class="tab-pane hidden">
+                    <!-- Issues Table with Filtering -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Issues Found</h2>
+                        
+                        <!-- Filter Controls -->
+                        <div class="mb-4 flex flex-wrap gap-4">
+                            <div>
+                                <label for="severity-filter" class="block text-sm font-medium text-gray-700 mb-1">Severity</label>
+                                <select id="severity-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="all">All Severities</option>
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="info">Info</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="file-filter" class="block text-sm font-medium text-gray-700 mb-1">File</label>
+                                <select id="file-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="all">All Files</option>
+                                    {% for file in unique_files %}
+                                    <option value="{{ file }}">{{ file }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="flex-1">
+                                <label for="search-filter" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                                <input type="text" id="search-filter" placeholder="Search issues..." 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Line</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Severity</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rule</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200 issues-table-body">
+                                    {% for issue in issues %}
+                                    <tr class="issue-row"
+                                        data-severity="{{ issue.severity }}"
+                                        data-file="{{ issue.file }}">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ issue.file }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ issue.line }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                                {% if issue.severity == 'error' %}bg-red-100 text-red-800
+                                                {% elif issue.severity == 'warning' %}bg-yellow-100 text-yellow-800
+                                                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                                {{ issue.severity }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ issue.rule }}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-900">{{ issue.description }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% if issues|length == 0 %}
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                                            No issues found
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Tab -->
+                <div id="chat-content" class="tab-pane hidden">
+                    <div class="bg-white rounded-lg shadow-lg flex flex-col h-[70vh] max-h-[700px]">
+                        <!-- Chat Header -->
+                        <div class="p-4 border-b border-gray-200">
+                            <h2 class="text-xl font-semibold text-gray-800">Chat with Codebase</h2>
+                        </div>
+
+                        <!-- Chat History (scrollable) -->
+                        <div id="chat-history" class="flex-1 p-6 overflow-y-auto">
+                            {% if chat_history %}
+                                {% for message in chat_history %}
+                                <div class="mb-4 flex {{ 'justify-end' if message.role == 'user' else 'justify-start' }}">
+                                    <div class="max-w-[85%] p-3 rounded-lg {{
+                                        'bg-blue-600 text-white' if message.role == 'user'
+                                        else 'bg-gray-200 text-gray-800'
+                                    }}">
+                                        <div class="chat-message-content">{{ message.content | safe }}</div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                            <div class="text-center text-gray-500 h-full flex items-center justify-center">
+                                <p>Ask a question about the code analysis findings.</p>
+                            </div>
+                            {% endif %}
+                            <!-- Typing indicator -->
+                            <div id="typing-indicator" class="mb-4 flex justify-start hidden">
+                                <div class="p-3 rounded-lg bg-gray-200 text-gray-800">
+                                    <div class="flex space-x-1">
+                                        <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+                                        <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                                        <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0.4s;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chat Input -->
+                        <div class="p-4 border-t border-gray-200">
+                            <form id="chat-form" class="flex gap-3">
+                                <input type="hidden" id="job-id" value="{{ job_id }}">
+                                <input type="text" id="chat-input"
+                                       class="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       placeholder="Chat with your codebase..." required>
+                                <button type="submit"
+                                        class="p-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out flex items-center justify-center w-10 h-10">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Data for JavaScript -->
+        <script id="report-data" type="application/json">
+            {
+                "lintReportHtml": {{ lint_report_html | tojson }},
+                "llmSummaryHtml": {{ llm_summary_html | tojson }},
+                "severityCounts": {
+                    "error": {{ severity_counts.error | tojson }},
+                    "warning": {{ severity_counts.warning | tojson }},
+                    "info": {{ severity_counts.info | tojson }}
+                },
+                "languageSplit": {
+                    "python": {{ language_split.python | tojson }},
+                    "javascript": {{ language_split.javascript | tojson }},
+                    "other": {{ language_split.other | tojson }}
+                }
+            }
+        </script>
+
+        <footer class="mt-16 text-center text-gray-500 text-sm">
+            <p>Code Review Assistant - Automated code quality analysis</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab switching functionality
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => btn.classList.remove('active', 'text-blue-600', 'border-blue-500'));
+                    tabButtons.forEach(btn => btn.classList.add('text-gray-500', 'border-transparent'));
+                    tabPanes.forEach(pane => pane.classList.add('hidden'));
+                    
+                    button.classList.remove('text-gray-500', 'border-transparent');
+                    button.classList.add('active', 'text-blue-600', 'border-blue-500');
+                    
+                    const targetPaneId = button.id.replace('-tab', '-content');
+                    const targetPane = document.getElementById(targetPaneId);
+                    if (targetPane) {
+                        targetPane.classList.remove('hidden');
+                    }
+                });
+            });
+            
+            // Download markdown functionality
+            const downloadBtn = document.getElementById('download-md-btn');
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', function() {
+                    const jobId = "{{ job_id }}";
+                    if (jobId) {
+                        // Combine LLM summary and lint report for download
+                        const llmSummary = document.getElementById('llm-summary')?.textContent || '';
+                        const lintReport = document.getElementById('lint-report')?.textContent || '';
+                        const markdownContent = llmSummary ? `# AI Summary
+
+${llmSummary}
+
+# Linting Report
+
+${lintReport}` : lintReport;
+                        const blob = new Blob([markdownContent], { type: 'text/markdown' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `cra-report-${jobId}.md`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }
+                });
+            }
+            
+            // Delete job functionality
+            const deleteBtn = document.getElementById('delete-btn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', function() {
+                    const jobId = "{{ job_id }}";
+                    if (jobId && confirm('Are you sure you want to delete this analysis?')) {
+                        fetch(`/delete/${jobId}`, {
+                            method: 'POST'
+                        }).then(response => {
+                            if (response.ok) {
+                                alert('Analysis deleted successfully');
+                                window.location.href = '/';
+                            } else {
+                                alert('Failed to delete analysis');
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // Chat functionality
+            const chatForm = document.getElementById('chat-form');
+            const chatInput = document.getElementById('chat-input');
+            const chatHistory = document.getElementById('chat-history');
+            const typingIndicator = document.getElementById('typing-indicator');
+            
+            if (chatForm) {
+                chatForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const jobId = "{{ job_id }}";
+                    const question = chatInput.value.trim();
+                    
+                    if (!question || !jobId) return;
+                    
+                    addMessageToChat('user', question);
+                    chatInput.value = '';
+                    
+                    typingIndicator.classList.remove('hidden');
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                    
+                    chatInput.disabled = true;
+                    const submitBtn = chatForm.querySelector('button[type="submit"]');
+                    submitBtn.disabled = true;
+                    
+                    fetch(`/chat/${jobId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `question=${encodeURIComponent(question)}`
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        return response.json();
+                    })
+                    .then(data => {
+                        addMessageToChat('assistant', data.answer_html || data.answer);
+                    })
+                    .catch(error => {
+                        console.error('Chat error:', error);
+                        addMessageToChat('assistant', 'Sorry, there was an error processing your question.');
+                    })
+                    .finally(() => {
+                        typingIndicator.classList.add('hidden');
+                        chatInput.disabled = false;
+                        submitBtn.disabled = false;
+                        chatInput.focus();
+                    });
+                });
+            }
+            
+            function addMessageToChat(role, content) {
+                const placeholder = chatHistory.querySelector('.text-center');
+                if (placeholder) placeholder.remove();
+
+                const typingIndicatorContainer = chatHistory.querySelector('#typing-indicator').parentNode;
+                
+                const messageFlexContainer = document.createElement('div');
+                messageFlexContainer.className = `mb-4 flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+
+                const contentDiv = document.createElement('div');
+                contentDiv.className = `max-w-[85%] p-3 rounded-lg ${
+                    role === 'user'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-800'
+                }`;
+                
+                // Render markdown content properly
+                if (typeof marked !== 'undefined') {
+                    contentDiv.innerHTML = '<div class="chat-message-content">' + marked.parse(content) + '</div>';
+                } else {
+                    contentDiv.innerHTML = '<div class="chat-message-content">' + content + '</div>';
+                }
+                
+                messageFlexContainer.appendChild(contentDiv);
+                // Insert the new message before the typing indicator
+                chatHistory.insertBefore(messageFlexContainer, typingIndicator);
+                
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            }
+            
+            // Get data from the script tag
+            const reportDataScript = document.getElementById('report-data');
+            const reportData = JSON.parse(reportDataScript.textContent);
+            
+            // Render the LLM summary and lint report
+            const llmSummaryDiv = document.getElementById('llm-summary');
+            const lintReportDiv = document.getElementById('lint-report');
+            if (llmSummaryDiv && reportData.llmSummaryHtml) {
+                llmSummaryDiv.innerHTML = reportData.llmSummaryHtml;
+            }
+            if (lintReportDiv && reportData.lintReportHtml) {
+                lintReportDiv.innerHTML = reportData.lintReportHtml;
+            }
+            
+            // Issue filtering functionality
+            const severityFilter = document.getElementById('severity-filter');
+            const fileFilter = document.getElementById('file-filter');
+            const searchFilter = document.getElementById('search-filter');
+            const issueRows = document.querySelectorAll('.issue-row');
+            
+            if (severityFilter && fileFilter && searchFilter) {
+                function filterIssues() {
+                    const severityValue = severityFilter.value;
+                    const fileValue = fileFilter.value;
+                    const searchValue = searchFilter.value.toLowerCase();
+                    
+                    issueRows.forEach(row => {
+                        const severity = row.dataset.severity;
+                        const file = row.dataset.file;
+                        const text = row.textContent.toLowerCase();
+                        
+                        const severityMatch = severityValue === 'all' || severity === severityValue;
+                        const fileMatch = fileValue === 'all' || file === fileValue;
+                        const searchMatch = searchValue === '' || text.includes(searchValue);
+                        
+                        row.style.display = (severityMatch && fileMatch && searchMatch) ? '' : 'none';
+                    });
+                }
+                
+                severityFilter.addEventListener('change', filterIssues);
+                fileFilter.addEventListener('change', filterIssues);
+                searchFilter.addEventListener('input', filterIssues);
+            }
+            
+            // Render charts
+            const severityCounts = reportData.severityCounts;
+            const languageSplit = reportData.languageSplit;
+            
+            // Severity Distribution Chart
+            const severityCtx = document.getElementById('severityChart').getContext('2d');
+            new Chart(severityCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Error', 'Warning', 'Info'],
+                    datasets: [{
+                        label: 'Number of Issues',
+                        data: [severityCounts.error || 0, severityCounts.warning || 0, severityCounts.info || 0],
+                        backgroundColor: ['rgba(239, 68, 0.8)', 'rgba(234, 179, 8, 0.8)', 'rgba(59, 130, 246, 0.8)'],
+                        borderColor: ['rgba(239, 68, 1)', 'rgba(234, 179, 8, 1)', 'rgba(59, 130, 246, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+            
+            // Language Split Chart
+            const languageCtx = document.getElementById('languageChart').getContext('2d');
+            new Chart(languageCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Python', 'JavaScript', 'Other'],
+                    datasets: [{
+                        label: 'Number of Issues',
+                        data: [languageSplit.python || 0, languageSplit.javascript || 0, languageSplit.other || 0],
+                        backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(251, 191, 36, 0.8)', 'rgba(156, 163, 175, 0.8)'],
+                        borderColor: ['rgba(59, 130, 246, 1)', 'rgba(251, 191, 36, 1)', 'rgba(156, 163, 175, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+            
+            // Render existing chat messages with proper formatting
+            const chatMessages = document.querySelectorAll('.chat-message-content');
+            chatMessages.forEach(element => {
+                if (typeof marked !== 'undefined' && element.innerHTML) {
+                    // Only render if it's not already HTML (to avoid double rendering)
+                    if (!element.innerHTML.includes('<') || element.innerHTML.includes('&lt;')) {
+                        element.innerHTML = marked.parse(element.textContent);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
