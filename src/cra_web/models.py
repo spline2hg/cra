@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy.sql import func
-from src.cra_web.database import Base
+from cra_web.database import Base
 
 
 class ChatMessage(Base):

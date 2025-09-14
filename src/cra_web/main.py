@@ -9,15 +9,15 @@ import httpx
 from fastapi import FastAPI, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from src.cra_web.parsers import parse_lint_report
+from cra_web.parsers import parse_lint_report
 from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
 from cra.lint_tool.main import run_linters
 from cra.chat import CodebaseChat
 from cra.llm_report import generate_llm_summary
-from src.cra_web.database import get_db, engine, Base
-from src.cra_web import crud
-from src.cra.config import settings
+from cra_web.database import get_db, engine, Base
+from cra_web import crud
+from cra.config import settings
 from langchain_core.messages import HumanMessage, AIMessage
 
 BASE_DIR = os.path.dirname(__file__)

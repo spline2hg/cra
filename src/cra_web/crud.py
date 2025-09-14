@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from src.cra_web import models
-from src.cra_web.models import Job
+from cra_web import models
+from cra_web.models import Job
 from sqlalchemy.sql import func
 
 
