@@ -76,7 +76,8 @@ async def github_login(request: Request, db: Session = Depends(get_db)):
 
     github_oauth_url = "https://github.com/login/oauth/authorize"
 
-    redirect_uri = "http://localhost:8000/auth/github/callback"
+    base_url = str(request.base_url).rstrip('/')
+    redirect_uri = f"{base_url}/auth/github/callback"
 
     state = str(uuid.uuid4())
 
@@ -114,7 +115,8 @@ async def github_callback(
 
     token_url = "https://github.com/login/oauth/access_token"
 
-    redirect_uri = "http://localhost:800/auth/github/callback"
+    base_url = str(request.base_url).rstrip('/')
+    redirect_uri = f"{base_url}/auth/github/callback"
 
     token_data = {
         "client_id": settings.github_client_id,

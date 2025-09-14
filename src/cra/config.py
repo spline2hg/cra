@@ -6,17 +6,29 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def get_project_root():
+    """Get the project root directory."""
+    current_path = Path(__file__).parent.absolute()
+    while current_path != current_path.parent:
+        if (current_path / "pyproject.toml").exists():
+            return current_path
+        current_path = current_path.parent
+    return Path.cwd()
+
+
 class Settings:
     """Application settings and configuration."""
 
     def __init__(self):
-        self.codebase_path = os.getenv("CODEBASE_PATH", "./")
-        self.cache_dir = os.getenv("CACHE_DIR", "./.cra_cache_temp")
-        self.reports_dir = os.getenv("REPORTS_DIR", "./Reports")
+        project_root = get_project_root()
+        
+        self.codebase_path = os.getenv("CODEBASE_PATH", str(project_root))
+        self.cache_dir = os.getenv("CACHE_DIR", str(project_root / ".cra_cache_temp"))
+        self.reports_dir = os.getenv("REPORTS_DIR", str(project_root / "Reports"))
         self.keep_reports = int(os.getenv("CRA_KEEP_REPORTS", "10"))
         self.secret_key = os.getenv(
             "SECRET_KEY", "maybe-secret-key"
-        ) 
+        )
 
         # GitHub OAuth Configuration
         self.github_client_id = os.getenv("GITHUB_CLIENT_ID")
