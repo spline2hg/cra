@@ -90,6 +90,8 @@ cra report <path-to-your-code>
 *   `-o, --output <file_path>`: Specify a custom path to save the report file.
 *   `--llm-summary`: (Default: True) Appends an AI-generated summary to the report.
 *   `--diff`: Generates and displays AI-powered refactoring recommendations for major issues in the console.
+Example:
+<img width="1242" height="288" alt="image" src="https://github.com/user-attachments/assets/516aac2a-ac95-477b-8dfc-e15283f80c17" />
 
 **Example:**
 
