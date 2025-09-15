@@ -51,6 +51,37 @@ class User(Base):
         }
 
 
+class Issue(Base):
+    """Model for storing parsed code issues."""
+    
+    __tablename__ = "issues"
+    __table_args__ = {"extend_existing": True}
+    
+    id = Column(Integer, primary_key=True)
+    job_id = Column(String, nullable=False)
+    file = Column(String, nullable=False)
+    line = Column(Integer, nullable=False)
+    severity = Column(String, nullable=False)
+    rule = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
+    fix = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        """Convert issue to dictionary."""
+        return {
+            "id": self.id,
+            "job_id": self.job_id,
+            "file": self.file,
+            "line": self.line,
+            "severity": self.severity,
+            "rule": self.rule,
+            "description": self.description,
+            "fix": self.fix,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
 class OAuthState(Base):
     """Model for storing OAuth state parameters for CSRF protection."""
 

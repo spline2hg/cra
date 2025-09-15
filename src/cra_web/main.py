@@ -17,6 +17,8 @@ from cra.chat import CodebaseChat
 from cra.llm_report import generate_llm_summary
 from cra_web.database import get_db, engine, Base
 from cra_web import crud
+from cra_web.models import Issue as IssueModel
+from cra_web.dtos import Issue
 from cra.config import settings
 from langchain_core.messages import HumanMessage, AIMessage
 
@@ -270,10 +272,38 @@ async def analyze_repo(
             user_id,
         )
 
-        # Add report content to database (store both report and LLM summary separately)
         full_report_content = f"{report_content}"
 
         crud.add_report(db, job_id, github_url, full_report_content, user_id)
+
+        # Parse issues and save them to the database
+        try:
+            from cra.lint_tool.py_linters import has_python
+            from cra.lint_tool.js_linters import has_javascript, get_js_issues
+            import pathlib
+            
+            issues = []
+            path_obj = pathlib.Path(tmp_folder)
+            
+            # Get Python issues using existing parsers
+            if has_python(path_obj):
+                try:
+                    py_issues = parse_lint_report(report_content)
+                    issues.extend(py_issues)
+                except Exception as e:
+                    print(f"Error parsing Python issues: {e}")
+
+            if has_javascript(path_obj):
+                try:
+                    js_issues_list = get_js_issues(tmp_folder)
+                    issues.extend(js_issues_list)
+                except Exception as e:
+                    print(f"Error getting JavaScript issues: {e}")
+            
+            for issue in issues:
+                crud.add_issue(db, job_id, issue)
+        except Exception as e:
+            print(f"Error saving issues to database: {e}")
 
         return RedirectResponse(url=f"/report/{job_id}", status_code=303)
 
@@ -314,31 +344,21 @@ async def report_page(request: Request, job_id: str, db: Session = Depends(get_d
         lint_report_content = parts[0].strip()
         llm_summary = "## LLM Summary" + parts[1] if len(parts) > 1 else ""
 
-    # Get structured issues directly from tools instead of parsing markdown
-    from cra.lint_tool.py_linters import has_python
-    from cra.lint_tool.js_linters import has_javascript, get_js_issues
-    import pathlib
+        # Get issues from database instead of parsing them every time
+        db_issues = crud.get_issues_by_job_id(db, job_id)
+        issues = []
+        for db_issue in db_issues:
+            issue = Issue(
+                file=db_issue.file,
+                line=db_issue.line,
+                severity=db_issue.severity,
+                rule=db_issue.rule,
+                description=db_issue.description,
+                fix=db_issue.fix
+            )
+            issues.append(issue)
 
-    issues = []
-    path_obj = pathlib.Path(job.folder_path)
-
-    # Get Python issues using existing parsers (for now)
-    if has_python(path_obj):
-        try:
-            py_issues = parse_lint_report(lint_report_content)
-            issues.extend(py_issues)
-        except Exception as e:
-            print(f"Error parsing Python issues: {e}")
-
-    # Get JavaScript issues using structured extraction
-    if has_javascript(path_obj):
-        try:
-            js_issues_list = get_js_issues(job.folder_path)
-            issues.extend(js_issues_list)
-        except Exception as e:
-            print(f"Error getting JavaScript issues: {e}")
-
-    total_issues = len(issues)
+        total_issues = len(issues)
 
     # Calculate severity and language distribution
     severity_counts = {"error": 0, "warning": 0, "info": 0}

@@ -1,7 +1,31 @@
 from sqlalchemy.orm import Session
 from cra_web import models
-from cra_web.models import Job
+from cra_web.models import Job, Issue
 from sqlalchemy.sql import func
+
+
+def add_issue(
+    db: Session, job_id: str, issue: Issue
+) -> models.Issue:
+    """Add a new issue to the database."""
+    db_issue = models.Issue(
+        job_id=job_id,
+        file=issue.file,
+        line=issue.line,
+        severity=issue.severity,
+        rule=issue.rule,
+        description=issue.description,
+        fix=issue.fix
+    )
+    db.add(db_issue)
+    db.commit()
+    db.refresh(db_issue)
+    return db_issue
+
+
+def get_issues_by_job_id(db: Session, job_id: str):
+    """Retrieve issues by job ID."""
+    return db.query(models.Issue).filter(models.Issue.job_id == job_id).all()
 
 
 def add_report(
