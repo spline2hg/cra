@@ -337,7 +337,7 @@ class CodebaseChat:
             docs = self.retriever.get_relevant_documents(query)
             
             # Check if user wants to include the latest report
-            if "@report" in query.lower():
+            if "report" in query.lower():
                 # Get the latest report content
                 report_content = self.get_latest_report_content()
                 if report_content:
@@ -348,13 +348,13 @@ class CodebaseChat:
                     )
                     docs.append(report_doc)
 
-            context_text = "\n\n".join(
-                [f"[{d.metadata.get('source')}]\n{d.page_content}" for d in docs]
-            )
+            # context_text = "\n\n".join(
+            #     [f"[{d.metadata.get('source')}]\n{d.page_content}" for d in docs]
+            # )
 
-            print("=== CONTEXT SENT TO LLM ===")
-            print(context_text)
-            print("=== END CONTEXT ===\n")
+            # print("=== CONTEXT SENT TO LLM ===")
+            # print(context_text)
+            # print("=== END CONTEXT ===\n")
 
             # Use conversational chain with history
             result = self.conversational_chain.invoke(
