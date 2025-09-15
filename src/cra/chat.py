@@ -9,7 +9,7 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_community.document_loaders.generic import GenericLoader
 from langchain_community.document_loaders.parsers import LanguageParser
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
@@ -85,9 +85,9 @@ class CodebaseChat:
             other_docs = other_loader.load()
 
         all_docs = code_docs + other_docs
-        print(
-            f"Loaded {len(code_docs)} code docs, {len(other_docs)} other docs, {len(all_docs)} total"
-        )
+        # print(
+        #     f"Loaded {len(code_docs)} code docs, {len(other_docs)} other docs, {len(all_docs)} total"
+        # )
         return all_docs
 
     def split_documents(self, docs: List) -> List:
@@ -123,7 +123,7 @@ class CodebaseChat:
                 else:
                     chunks.append(doc)
 
-        print(f"Split into {len(chunks)} chunks")
+        # print(f"Split into {len(chunks)} chunks")
         return chunks
 
     def create_vectorstore(self, chunks: List):
@@ -132,19 +132,20 @@ class CodebaseChat:
             if os.getenv("COHERE_API_KEY"):
                 try:
                     embeddings = CohereEmbeddings(model="embed-english-v3.0")
-                    print("Using Cohere embeddings")
+                    # print("Using Cohere embeddings")
                 except Exception as e:
-                    print(f"Failed to initialize Cohere embeddings: {e}")
+                    # print(f"Failed to initialize Cohere embeddings: {e}")
                     # Fall back to Google embeddings
                     embeddings = GoogleGenerativeAIEmbeddings(model=self.embed_model)
-                    print("Using Google embeddings")
+                    # print("Using Google embeddings")
             elif os.getenv("GOOGLE_API_KEY"):
                 try:
                     embeddings = GoogleGenerativeAIEmbeddings(model=self.embed_model)
-                    print("Using Google embeddings")
+                    # print("Using Google embeddings")
                 except Exception as e:
-                    print(f"Failed to initialize Google embeddings: {e}")
-                    print("Embedding functionality will be disabled.")
+                    # print(f"Failed to initialize Google embeddings: {e}")
+                    # print("Embedding functionality will be disabled.")
+                    # Create vectorstore without embeddings
                     self.vectorstore = Chroma(persist_directory=self.persist_dir)
                     self.vectorstore.add_documents(chunks)
                     return
@@ -156,8 +157,8 @@ class CodebaseChat:
             )
         except Exception as e:
             if "quota" in str(e).lower() or "429" in str(e):
-                print(f"API quota exceeded. Please wait and try again later.")
-                print(f"Error: {e}")
+                # print(f"API quota exceeded. Please wait and try again later.")
+                # print(f"Error: {e}")
                 raise RuntimeError("API quota exceeded. Please try again later.") from e
             else:
                 raise
@@ -219,22 +220,22 @@ class CodebaseChat:
 
     def initialize(self):
         if self.documents is None:
-            print("Loading documents...")
+            # print("Loading documents...")
             self.documents = self.load_documents()
 
-        print("Splitting documents...")
+        # print("Splitting documents...")
         chunks = self.split_documents(self.documents)
 
-        print("Creating vector store...")
+        # print("Creating vector store...")
         self.create_vectorstore(chunks)
 
-        print("Setting up retriever...")
+        # print("Setting up retriever...")
         self.setup_retriever()
 
-        print("Setting up chain...")
+        # print("Setting up chain...")
         self.setup_chain()
 
-        print("Chat system ready!")
+        # print("Chat system ready!")
 
     def get_latest_report_content(self):
         """Get latest report content."""
@@ -265,12 +266,12 @@ class CodebaseChat:
         if self.vectorstore is None:
             raise ValueError("Vectorstore not initialized.")
 
-        print("Splitting new documents...")
+        # print("Splitting new documents...")
         chunks = self.split_documents(new_docs)
 
-        print(f"Adding {len(chunks)} chunks to index...")
+        # print(f"Adding {len(chunks)} chunks to index...")
         self.vectorstore.add_documents(chunks)
-        print("Documents added successfully!")
+        # print("Documents added successfully!")
 
     def load_existing_index(self):
         """Load existing vector store if available."""
@@ -281,28 +282,29 @@ class CodebaseChat:
             if not os.path.exists(self.persist_dir) or not os.listdir(self.persist_dir):
                 return False
 
-            print("Loading existing vector store...")
+            # print("Loading existing vector store...")
             # Try Cohere embeddings first if API key is available
             if os.getenv("COHERE_API_KEY"):
                 try:
                     embeddings = CohereEmbeddings(model="embed-english-v3.0")
-                    print("Using Cohere embeddings")
+                    # print("Using Cohere embeddings")
                 except Exception as e:
-                    print(f"Failed to initialize Cohere embeddings: {e}")
+                    # print(f"Failed to initialize Cohere embeddings: {e}")
                     # Fall back to Google embeddings
                     embeddings = GoogleGenerativeAIEmbeddings(model=self.embed_model)
-                    print("Using Google embeddings")
+                    # print("Using Google embeddings")
             elif os.getenv("GOOGLE_API_KEY"):
                 try:
                     embeddings = GoogleGenerativeAIEmbeddings(model=self.embed_model)
-                    print("Using Google embeddings")
+                    # print("Using Google embeddings")
                 except Exception as e:
-                    print(f"Failed to initialize Google embeddings: {e}")
-                    print("Embedding functionality will be disabled.")
+                    # print(f"Failed to initialize Google embeddings: {e}")
+                    # print("Embedding functionality will be disabled.")
+                    # Load vectorstore without embeddings
                     self.vectorstore = Chroma(persist_directory=self.persist_dir)
                     self.setup_retriever()
                     self.setup_chain()
-                    print("Existing index loaded!")
+                    # print("Existing index loaded!")
                     return True
 
             self.vectorstore = Chroma(
@@ -310,7 +312,7 @@ class CodebaseChat:
             )
             self.setup_retriever()
             self.setup_chain()
-            print("Existing index loaded!")
+            # print("Existing index loaded!")
             return True
         except Exception as e:
             print(f"Could not load existing index: {e}")

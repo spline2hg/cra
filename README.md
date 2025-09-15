@@ -82,7 +82,7 @@ CRA provides a simple command-line interface.
 To run a full analysis on your code and save a markdown report. The path can point to a single file or an entire directory.
 
 ```bash
-cra report <path-to-your-code>
+cra analyze <path-to-your-code>
 ```
 
 **Options:**
@@ -97,7 +97,7 @@ Example:
 
 ```bash
 # Analyze a project and show AI refactoring suggestions
-cra report ./my-project --diff
+cra analyze ./my-project --diff
 ```
 
 ### Chatting with Your Codebase

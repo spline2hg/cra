@@ -26,7 +26,7 @@ def cli():
     default=False,
     help="Generate LLM-powered diff recommendations for major refactoring",
 )
-def report(path, output, llm_summary, diff):
+def analyze(path, output, llm_summary, diff):
     """Generate comprehensive code quality report for specified file or directory."""
     abs_path = os.path.abspath(path)
     path_obj = pathlib.Path(abs_path)
@@ -89,9 +89,9 @@ def chat(codebase_path, question, reindex, clear_history):
             else:
                 raise
     else:
-        click.echo(f"Checking for existing index at: {chat_system.persist_dir}")
+        # click.echo(f"Checking for existing index at: {chat_system.persist_dir}")
         if not chat_system.load_existing_index():
-            click.echo("No existing index found. Creating new index...")
+            # click.echo("No existing index found. Creating new index...")
             try:
                 chat_system.initialize()
             except RuntimeError as e:
