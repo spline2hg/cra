@@ -448,6 +448,10 @@ async def chat_endpoint(
     return JSONResponse(content={"answer": answer, "answer_html": answer_html})
 
 
+@app.get("/ping")
+async def ping():
+    return {"msg": "pong"}
+
 if __name__ == "__main__":
     import uvicorn
 
