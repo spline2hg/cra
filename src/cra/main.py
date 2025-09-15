@@ -43,9 +43,16 @@ def report(path, output, llm_summary, diff):
     if llm_summary:
         click.echo("Generating LLM summary...")
         summary = generate_llm_summary(report_content)
-        if report_content.startswith("# Linting Report"):
-            report_content = report_content[report_content.find('\n') + 1:]
-        report_content = f"# Linting Report\n\n## LLM Summary\n\n{summary}\n\n---\n\n" + report_content
+        header_end = report_content.find("\n\n## ")
+        if header_end == -1:
+            header_end = report_content.find("\n---")
+        if header_end == -1:
+            header_end = len(report_content)
+        
+        header_part = report_content[:header_end]
+        content_part = report_content[header_end:]
+        
+        report_content = header_part + f"\n\n## LLM Summary\n\n{summary}\n\n---\n" + content_part
 
     save_report(report_content, output)
 
