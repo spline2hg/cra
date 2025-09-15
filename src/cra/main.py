@@ -43,7 +43,9 @@ def report(path, output, llm_summary, diff):
     if llm_summary:
         click.echo("Generating LLM summary...")
         summary = generate_llm_summary(report_content)
-        report_content += f"\n\n## LLM Summary\n\n{summary}\n"
+        if report_content.startswith("# Linting Report"):
+            report_content = report_content[report_content.find('\n') + 1:]
+        report_content = f"# Linting Report\n\n## LLM Summary\n\n{summary}\n\n---\n\n" + report_content
 
     save_report(report_content, output)
 

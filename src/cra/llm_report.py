@@ -32,12 +32,12 @@ Provide only the summary content as output."""
             messages=[
                 {
                     "role": "system",
-                    "content": "You are an expert Python code reviewer.",
+                    "content": "You are an expert software engineer and code quality reviewer with deep knowledge of Python, JavaScript, security best practices, and software engineering principles.",
                 },
                 {"role": "user", "content": prompt},
             ],
             temperature=0.3,
-            max_tokens=1000,
+            max_tokens=2000,
         )
 
         summary = response.choices[0].message.content

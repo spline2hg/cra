@@ -12,7 +12,7 @@ from langchain_community.document_loaders.parsers import LanguageParser
 from langchain_community.vectorstores import Chroma
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.runnables.history import RunnableWithMessageHistory
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_text_splitters import Language, RecursiveCharacterTextSplitter
 
 from cra.config import settings
@@ -128,8 +128,27 @@ class CodebaseChat:
 
     def create_vectorstore(self, chunks: List):
         try:
-            # embeddings = GoogleGenerativeAIEmbeddings(model=self.embed_model)
-            embeddings = CohereEmbeddings(model="embed-english-v3.0")
+            # Try Cohere embeddings first if API key is available
+            if os.getenv("COHERE_API_KEY"):
+                try:
+                    embeddings = CohereEmbeddings(model="embed-english-v3.0")
+                    print("Using Cohere embeddings")
+                except Exception as e:
+                    print(f"Failed to initialize Cohere embeddings: {e}")
+                    # Fall back to Google embeddings
+                    embeddings = GoogleGenerativeAIEmbeddings(model=self.embed_model)
+                    print("Using Google embeddings")
+            elif os.getenv("GOOGLE_API_KEY"):
+                try:
+                    embeddings = GoogleGenerativeAIEmbeddings(model=self.embed_model)
+                    print("Using Google embeddings")
+                except Exception as e:
+                    print(f"Failed to initialize Google embeddings: {e}")
+                    print("Embedding functionality will be disabled.")
+                    self.vectorstore = Chroma(persist_directory=self.persist_dir)
+                    self.vectorstore.add_documents(chunks)
+                    return
+
             self.vectorstore = Chroma.from_documents(
                 documents=chunks,
                 embedding=embeddings,
@@ -263,8 +282,29 @@ class CodebaseChat:
                 return False
 
             print("Loading existing vector store...")
-            # embeddings = GoogleGenerativeAIEmbeddings(model=self.embed_model)
-            embeddings = CohereEmbeddings(model="embed-english-v3.0")
+            # Try Cohere embeddings first if API key is available
+            if os.getenv("COHERE_API_KEY"):
+                try:
+                    embeddings = CohereEmbeddings(model="embed-english-v3.0")
+                    print("Using Cohere embeddings")
+                except Exception as e:
+                    print(f"Failed to initialize Cohere embeddings: {e}")
+                    # Fall back to Google embeddings
+                    embeddings = GoogleGenerativeAIEmbeddings(model=self.embed_model)
+                    print("Using Google embeddings")
+            elif os.getenv("GOOGLE_API_KEY"):
+                try:
+                    embeddings = GoogleGenerativeAIEmbeddings(model=self.embed_model)
+                    print("Using Google embeddings")
+                except Exception as e:
+                    print(f"Failed to initialize Google embeddings: {e}")
+                    print("Embedding functionality will be disabled.")
+                    self.vectorstore = Chroma(persist_directory=self.persist_dir)
+                    self.setup_retriever()
+                    self.setup_chain()
+                    print("Existing index loaded!")
+                    return True
+
             self.vectorstore = Chroma(
                 persist_directory=self.persist_dir, embedding_function=embeddings
             )
@@ -295,6 +335,19 @@ class CodebaseChat:
 
             # Get context for display (same as before)
             docs = self.retriever.get_relevant_documents(query)
+            
+            # Check if user wants to include the latest report
+            if "@report" in query.lower():
+                # Get the latest report content
+                report_content = self.get_latest_report_content()
+                if report_content:
+                    from langchain_core.documents import Document
+                    report_doc = Document(
+                        page_content=report_content,
+                        metadata={"source": "Latest Linting Report"}
+                    )
+                    docs.append(report_doc)
+
             context_text = "\n\n".join(
                 [f"[{d.metadata.get('source')}]\n{d.page_content}" for d in docs]
             )
