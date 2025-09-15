@@ -56,6 +56,9 @@ Here’s how the components interact in the two main use cases.
 4.  **Report Unification**: The raw text outputs from each linter are collected and formatted into a single Markdown string.
 5.  **LLM Summary (Optional)**: The Markdown string is sent to the Gemini API, which returns a summary. The summary is appended to the report.
 6.  **Output**: The final report is saved to a `.md` file on the disk.
+<p align="center">
+<img width="500" height="500" alt="report_workflow" src="https://github.com/user-attachments/assets/add72905-8119-4534-892c-ba39b9475d5a" />
+</p>
 
 **b. Interactive Chat (RAG) Workflow**
 
@@ -71,6 +74,9 @@ Here’s how the components interact in the two main use cases.
 3.  **Generate**: A prompt containing the original question and the retrieved context is sent to the Gemini LLM.
 4.  **Response**: The LLM generates an answer based on the provided context, which is then displayed to the user. The conversation history is updated.
 
+<p align="center">
+<img width="500" height="800" alt="chatt_workflow" src="https://github.com/user-attachments/assets/176223cc-bdf3-4821-b60b-1e45a108cc6a" />
+</p>
 ### 4. Major Design Decisions & Trade-offs
 
 *   **Retrieval-Augmented Generation (RAG) for Code Q&A**
